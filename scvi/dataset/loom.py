@@ -21,10 +21,16 @@ class LoomDataset(GeneExpressionDataset):
 
     """
 
-    def __init__(self, filename, save_path='data/', url=None):
+    def __init__(self, filename, save_path='data/', url=None,
+                 gene_attr='Gene', batch_attr='BatchID', cluster_attr='ClusterID',
+                 cell_type_attr='CellTypes'):
         self.download_name = filename
         self.save_path = save_path
         self.url = url
+        self.gene_attr = gene_attr
+        self.batch_attr = batch_attr
+        self.cluster_attr = cluster_attr
+        self.cell_type_attr = cell_type_attr
 
         self.has_gene, self.has_batch, self.has_cluster = False, False, False
 
@@ -42,19 +48,19 @@ class LoomDataset(GeneExpressionDataset):
         ds = loompy.connect(self.save_path + self.download_name)
         select = ds[:, :].sum(axis=0) > 0  # Take out cells that doesn't express any gene
 
-        if 'Gene' in ds.ra:
-            gene_names = ds.ra['Gene']
+        if self.gene_attr in ds.ra:
+            gene_names = ds.ra[self.gene_attr]
 
-        if 'BatchID' in ds.ca:
-            batch_indices = ds.ca['BatchID']
+        if self.batch_attr in ds.ca:
+            batch_indices = ds.ca[self.batch_attr]
             batch_indices = np.reshape(batch_indices, (batch_indices.shape[0], 1))[select]
 
-        if 'ClusterID' in ds.ca:
-            labels = np.array(ds.ca['ClusterID'])
+        if self.cluster_attr in ds.ca:
+            labels = np.array(ds.ca[self.cluster_attr])
             labels = np.reshape(labels, (labels.shape[0], 1))[select]
 
-        if 'CellTypes' in ds.attrs:
-            cell_types = np.array(ds.attrs['CellTypes'])
+        if self.cell_type_attr in ds.attrs:
+            cell_types = np.array(ds.attrs[self.cell_type_attr])[select]
 
         data = ds[:, select].T  # change matrix to cells by genes
         ds.close()
